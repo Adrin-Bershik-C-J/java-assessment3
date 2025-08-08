@@ -1,0 +1,701 @@
+# Java Assessment 3 - Event Registration System
+
+[GitHub Repository](https://github.com/Adrin-Bershik-C-J/java-assessment3)
+
+## Overview
+
+This is a Spring Boot REST API project implementing a simple Event Registration system.  
+It allows users to create events, register users, and register those users for events.
+
+The application uses:
+
+- Spring Boot with Spring Data JPA for ORM  
+- Hibernate for database interactions  
+- MapStruct for DTO to Entity mapping  
+- Jakarta Bean Validation for input validation  
+- Global exception handling for validation and resource errors
+
+---
+
+## Features
+
+- **User Management**: Create and manage users with basic validation.  
+- **Event Management**: Create events with fields like title, description, date, and location.  
+- **Registrations**: Register users to events with automatic registration date.  
+- **Validation**: Input validation for all request DTOs to ensure data integrity.  
+- **Exception Handling**: Custom global exception handling to return proper HTTP status and messages.  
+- **DTO Mapping**: Uses MapStruct for clean conversion between Entities and DTOs.
+
+---
+
+## Technologies Used
+
+- Java 21  
+- Spring Boot 3.0+  
+- Spring Data JPA  
+- Hibernate  
+- MapStruct  
+- Jakarta Validation (JSR-380)  
+- Lombok  
+- H2 Database (or configure your own)  
+- Maven
+
+---
+
+## Setup and Run
+
+### Prerequisites
+
+- JDK 21 or later  
+- Maven 3.8+  
+- (Optional) IDE like IntelliJ IDEA or Eclipse  
+
+### Running the application
+
+1. Clone the repo:
+
+   ```bash
+   git clone https://github.com/Adrin-Bershik-C-J/java-assessment3.git
+   cd java-assessment3
+## Project Structure
+```
+adrin-bershik-c-j-java-assessment3/
+├── mvnw
+├── mvnw.cmd
+├── pom.xml
+├── request.http
+├── src/
+│   ├── main/
+│   │   ├── java/
+│   │   │   └── com/
+│   │   │       └── example/
+│   │   │           └── assessment3/
+│   │   │               ├── Assessment3Application.java
+│   │   │               ├── controller/
+│   │   │               │   ├── EventController.java
+│   │   │               │   ├── RegisterController.java
+│   │   │               │   └── UserController.java
+│   │   │               ├── dto/
+│   │   │               │   ├── EventRequestDTO.java
+│   │   │               │   ├── EventResponseDTO.java
+│   │   │               │   ├── RegistrationRequestDTO.java
+│   │   │               │   ├── RegistrationResponseDTO.java
+│   │   │               │   ├── UserRequestDTO.java
+│   │   │               │   └── UserResponseDTO.java
+│   │   │               ├── entity/
+│   │   │               │   ├── Event.java
+│   │   │               │   ├── Registration.java
+│   │   │               │   └── User.java
+│   │   │               ├── exception/
+│   │   │               │   ├── GlobalExceptionHandler.java
+│   │   │               │   └── ResourceNotFoundException.java
+│   │   │               ├── mapper/
+│   │   │               │   ├── EventMapper.java
+│   │   │               │   ├── RegistrationMapper.java
+│   │   │               │   └── UserMapper.java
+│   │   │               ├── repository/
+│   │   │               │   ├── EventRepository.java
+│   │   │               │   ├── RegistrationRepository.java
+│   │   │               │   └── UserRepository.java
+│   │   │               └── service/
+│   │   │                   ├── EventService.java
+│   │   │                   ├── RegisterService.java
+│   │   │                   └── UserService.java
+│   │   └── resources/
+│   │       └── application.properties
+│   └── test/
+│       └── java/
+│           └── com/
+│               └── example/
+│                   └── assessment3/
+│                       └── Assessment3ApplicationTests.java
+└── .mvn/
+    └── wrapper/
+        └── maven-wrapper.properties
+```
+
+
+package com.example.assessment3.controller;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.example.assessment3.dto.EventRequestDTO;
+import com.example.assessment3.dto.EventResponseDTO;
+import com.example.assessment3.service.EventService;
+
+import jakarta.validation.Valid;
+
+@RestController
+@RequestMapping("/api/event")
+public class EventController {
+
+    @Autowired
+    private EventService eventService;
+
+    @PostMapping
+    public ResponseEntity<EventResponseDTO> createEvent(@Valid @RequestBody EventRequestDTO event) {
+        EventResponseDTO savedEvent = eventService.createEvent(event);
+        return ResponseEntity.ok(savedEvent);
+    }
+}
+
+
+
+package com.example.assessment3.controller;
+
+import java.util.List;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.example.assessment3.dto.RegistrationRequestDTO;
+import com.example.assessment3.dto.RegistrationResponseDTO;
+import com.example.assessment3.service.RegisterService;
+
+import jakarta.validation.Valid;
+
+@RestController
+@RequestMapping("/api/register")
+public class RegisterController {
+
+    @Autowired
+    private RegisterService registerService;
+
+    @PostMapping
+    public ResponseEntity<RegistrationResponseDTO> createRegistration(
+            @Valid @RequestBody RegistrationRequestDTO register) {
+        RegistrationResponseDTO saved = registerService.createRegistration(register);
+        return ResponseEntity.ok(saved);
+    }
+
+    @GetMapping("/event/{eventId}")
+    public ResponseEntity<List<RegistrationResponseDTO>> getByEventId(@PathVariable Long eventId) {
+        List<RegistrationResponseDTO> registrations = registerService.findRegistrationsByEventId(eventId);
+        return ResponseEntity.ok(registrations);
+    }
+
+}
+
+
+package com.example.assessment3.controller;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.example.assessment3.dto.UserRequestDTO;
+import com.example.assessment3.dto.UserResponseDTO;
+import com.example.assessment3.service.UserService;
+
+import jakarta.validation.Valid;
+
+@RestController
+@RequestMapping("/api/user")
+public class UserController {
+
+    @Autowired
+    private UserService userService;
+
+    @PostMapping
+    public ResponseEntity<UserResponseDTO> createUser(@Valid @RequestBody UserRequestDTO user) {
+        UserResponseDTO savedUser = userService.createUser(user);
+        return ResponseEntity.ok(savedUser);
+    }
+}
+
+
+
+
+package com.example.assessment3.dto;
+
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
+import lombok.Data;
+
+@Data
+public class EventRequestDTO {
+
+    @NotNull(message = "Event title should not be blank")
+    @Size(max = 20, message = "Title length should not exceed 20 characters")
+    private String title;
+
+    @Size(max = 100, message = "Description should not exceed 100 characters")
+    private String description;
+
+    @NotNull(message = "Date should not be left blank")
+    @Size(max = 10, message = "Date should be of max 10 characters")
+    private String date;
+
+    @NotNull(message = "Location is mandatory to mention")
+    @Size(max = 30, message = "Location should not exceed length of 30")
+    private String location;
+}
+
+
+package com.example.assessment3.dto;
+
+import lombok.Data;
+
+@Data
+public class EventResponseDTO {
+
+    private Long id;
+    private String title;
+    private String description;
+    private String date;
+    private String location;
+
+}
+
+
+package com.example.assessment3.dto;
+
+import jakarta.validation.constraints.NotNull;
+import lombok.Data;
+
+@Data
+public class RegistrationRequestDTO {
+
+    @NotNull(message = "User ID is required")
+    private Long userId;
+
+    @NotNull(message = "Event ID is required")
+    private Long eventId;
+}
+
+
+package com.example.assessment3.dto;
+
+import lombok.Data;
+import java.time.LocalDate;
+
+@Data
+public class RegistrationResponseDTO {
+
+    private Long registrationId;
+    private LocalDate date;
+    private Long userId;
+    private Long eventId;
+
+}
+
+
+package com.example.assessment3.dto;
+
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
+import lombok.Data;
+
+@Data
+public class UserRequestDTO {
+
+    @NotBlank(message = "Name should not be blank")
+    @Size(max = 20, message = "Shorten your name with a max of 20 characters")
+    private String name;
+
+    @Email(message = "Improper email format")
+    @NotBlank(message = "Email should not be blank")
+    private String email;
+}
+
+
+package com.example.assessment3.dto;
+
+import lombok.Data;
+
+@Data
+public class UserResponseDTO {
+    private Long id;
+    private String name;
+    private String email;
+}
+
+
+package com.example.assessment3.entity;
+
+import java.util.List;
+
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.Table;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Entity
+@Data
+@AllArgsConstructor
+@NoArgsConstructor
+@Table(name = "events")
+public class Event {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.AUTO)
+    private Long id;
+    private String title;
+    private String description;
+    private String date;
+    private String location;
+
+    @OneToMany(mappedBy = "event")
+    private List<Registration> registrations;
+
+}
+
+
+package com.example.assessment3.entity;
+
+import java.time.LocalDate;
+
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.Table;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Entity
+@Data
+@AllArgsConstructor
+@NoArgsConstructor
+@Table(name = "registrations")
+public class Registration {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.AUTO)
+    private Long registrationId;
+
+    private LocalDate date;
+
+    @ManyToOne
+    @JoinColumn(name = "user_id")
+    private User user;
+
+    @ManyToOne
+    @JoinColumn(name = "event_id")
+    private Event event;
+
+    @PrePersist
+    public void setRegistrationDate() {
+        this.date = LocalDate.now();
+    }
+}
+
+package com.example.assessment3.entity;
+
+import java.util.List;
+
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.Table;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Entity
+@Data
+@AllArgsConstructor
+@NoArgsConstructor
+@Table(name = "users")
+public class User {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.AUTO)
+    private Long id;
+    private String name;
+    private String email;
+
+    @OneToMany(mappedBy = "user")
+    private List<Registration> registrations;
+}
+
+
+
+package com.example.assessment3.exception;
+
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.annotation.ControllerAdvice;
+import org.springframework.web.bind.annotation.ExceptionHandler;
+
+@ControllerAdvice
+public class GlobalExceptionHandler {
+
+    @ExceptionHandler(ResourceNotFoundException.class)
+    public ResponseEntity<String> handleNotFound(ResourceNotFoundException ex) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ex.getMessage());
+    }
+
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<String> handleValidationErrors(MethodArgumentNotValidException ex) {
+        String errorMessage = ex.getBindingResult().getFieldErrors()
+                .stream().map(err -> err.getField() + ": " + err.getDefaultMessage())
+                .findFirst().orElse("Validation error");
+        return ResponseEntity.badRequest().body(errorMessage);
+    }
+
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<String> handleGenericError(Exception ex) {
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Server error: " + ex.getMessage());
+    }
+}
+
+
+package com.example.assessment3.exception;
+
+public class ResourceNotFoundException extends RuntimeException {
+    public ResourceNotFoundException(String message) {
+        super(message);
+    }
+}
+
+package com.example.assessment3.mapper;
+
+import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
+
+import com.example.assessment3.dto.EventRequestDTO;
+import com.example.assessment3.dto.EventResponseDTO;
+import com.example.assessment3.entity.Event;
+
+@Mapper(componentModel = "spring")
+public interface EventMapper {
+
+    EventResponseDTO toDto(Event event);
+
+    @Mapping(target = "id", ignore = true)
+    @Mapping(target = "registrations", ignore = true)
+    Event toEntity(EventRequestDTO event);
+}
+
+
+
+package com.example.assessment3.mapper;
+
+import java.util.List;
+
+import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
+
+import com.example.assessment3.dto.RegistrationRequestDTO;
+import com.example.assessment3.dto.RegistrationResponseDTO;
+import com.example.assessment3.entity.Registration;
+
+@Mapper(componentModel = "spring")
+public interface RegistrationMapper {
+
+    @Mapping(source = "user.id", target = "userId")
+    @Mapping(source = "event.id", target = "eventId")
+    RegistrationResponseDTO toDto(Registration register);
+
+    @Mapping(target = "date", ignore = true)
+    @Mapping(target = "registrationId", ignore = true)
+    @Mapping(source = "userId", target = "user.id")
+    @Mapping(source = "eventId", target = "event.id")
+    Registration toEntity(RegistrationRequestDTO register);
+
+    List<RegistrationResponseDTO> toDtoList(List<Registration> registrations);
+
+}
+
+
+package com.example.assessment3.mapper;
+
+import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
+
+import com.example.assessment3.dto.UserRequestDTO;
+import com.example.assessment3.dto.UserResponseDTO;
+import com.example.assessment3.entity.User;
+
+@Mapper(componentModel = "spring")
+public interface UserMapper {
+
+    UserResponseDTO toDto(User user);
+
+    @Mapping(target = "id", ignore = true)
+    @Mapping(target = "registrations", ignore = true)
+    User toEntity(UserRequestDTO user);
+
+}
+
+package com.example.assessment3.repository;
+
+import org.springframework.data.jpa.repository.JpaRepository;
+
+import com.example.assessment3.entity.Event;
+
+public interface EventRepository extends JpaRepository<Event, Long> {
+
+}
+
+
+
+package com.example.assessment3.repository;
+
+import java.util.List;
+
+import org.springframework.data.jpa.repository.JpaRepository;
+
+import com.example.assessment3.entity.Registration;
+
+public interface RegistrationRepository extends JpaRepository<Registration, Long> {
+    List<Registration> findByEventId(Long eventId);
+
+
+}
+
+package com.example.assessment3.repository;
+
+import org.springframework.data.jpa.repository.JpaRepository;
+
+import com.example.assessment3.entity.User;
+
+public interface UserRepository extends JpaRepository<User, Long> {
+
+}
+
+
+
+package com.example.assessment3.service;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import com.example.assessment3.dto.EventRequestDTO;
+import com.example.assessment3.dto.EventResponseDTO;
+import com.example.assessment3.entity.Event;
+import com.example.assessment3.mapper.EventMapper;
+import com.example.assessment3.repository.EventRepository;
+
+@Service
+public class EventService {
+
+    @Autowired
+    private EventRepository eventRepository;
+
+    @Autowired
+    private EventMapper eventMapper;
+
+    public EventResponseDTO createEvent(EventRequestDTO event) {
+        Event newEvent = eventMapper.toEntity(event);
+        Event savedEvent = eventRepository.save(newEvent);
+        return eventMapper.toDto(savedEvent);
+    }
+
+}
+
+
+
+package com.example.assessment3.service;
+
+import java.util.List;
+import java.util.stream.Collectors;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import com.example.assessment3.dto.RegistrationRequestDTO;
+import com.example.assessment3.dto.RegistrationResponseDTO;
+import com.example.assessment3.entity.Registration;
+import com.example.assessment3.exception.ResourceNotFoundException;
+import com.example.assessment3.mapper.RegistrationMapper;
+import com.example.assessment3.repository.EventRepository;
+import com.example.assessment3.repository.RegistrationRepository;
+import com.example.assessment3.repository.UserRepository;
+
+@Service
+public class RegisterService {
+
+    @Autowired
+    private RegistrationRepository registrationRepository;
+
+    @Autowired
+    private RegistrationMapper registrationMapper;
+
+    @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
+    private EventRepository eventRepository;
+
+    public RegistrationResponseDTO createRegistration(RegistrationRequestDTO register) {
+        Registration registration = new Registration();
+        registration.setUser(userRepository.findById(register.getUserId())
+                .orElseThrow(() -> new ResourceNotFoundException("User not found")));
+        registration.setEvent(eventRepository.findById(register.getEventId())
+                .orElseThrow(() -> new ResourceNotFoundException("Event not found")));
+        Registration saved = registrationRepository.save(registration);
+        return registrationMapper.toDto(saved);
+    }
+
+    public List<RegistrationResponseDTO> findRegistrationsByEventId(Long eventId) {
+        return registrationRepository.findByEventId(eventId)
+                .stream()
+                .map(registrationMapper::toDto)
+                .collect(Collectors.toList());
+    }
+
+}
+
+
+
+package com.example.assessment3.service;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import com.example.assessment3.dto.UserRequestDTO;
+import com.example.assessment3.dto.UserResponseDTO;
+import com.example.assessment3.entity.User;
+import com.example.assessment3.mapper.UserMapper;
+import com.example.assessment3.repository.UserRepository;
+
+@Service
+public class UserService {
+
+    @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
+    private UserMapper userMapper;
+
+    public UserResponseDTO createUser(UserRequestDTO user) {
+        User temp = userMapper.toEntity(user);
+        User savedUser = userRepository.save(temp);
+        return userMapper.toDto(savedUser);
+    }
+
+}
+
+
+
+give me readme.md file
+https://github.com/Adrin-Bershik-C-J/java-assessment3 
