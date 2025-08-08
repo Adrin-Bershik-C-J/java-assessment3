@@ -1,0 +1,30 @@
+POST http://localhost:8080/api/user
+Content-Type: application/json
+
+{
+  "name": "Bob",
+  "email": "bob@gmail.com"
+}
+
+###
+POST http://localhost:8080/api/event
+Content-Type: application/json
+
+{
+  "title": "Dance",
+  "description": "Dance program",
+  "date":"23-2-04",
+  "location":"KK"
+}
+
+###
+POST http://localhost:8080/api/register
+Content-Type: application/json
+
+{
+  "userId": 2,
+  "eventId": 1
+}
+
+###
+GET http://localhost:8080/api/register/event/1
