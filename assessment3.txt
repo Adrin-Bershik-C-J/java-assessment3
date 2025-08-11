@@ -695,7 +695,42 @@ public class UserService {
 
 }
 
+You are given the following buggy service implementation. Identify the issues and correct the logic.
+
+```java
+public class EventServiceImpl implements EventService {
+    
+    @Autowired
+    private EventRepository eventRepo;
+    
+    @Override
+    public Event createEvent(Event event) {
+        if(event.getTitle().length() < 0) {
+            throw new RuntimeException("Invalid title");
+        }
+        return eventRepo.save(event);
+    }
+}
 
 
-give me readme.md file
-https://github.com/Adrin-Bershik-C-J/java-assessment3 
+There are two main problems in this EventServiceImpl code — one is a logic bug, and the other is missing validation robustness.
+
+In 'if(event.getTitle().length() < 0) {'
+String.length() can never be less than 0, so this condition will never trigger.
+Fix:
+if (event.getTitle() == null || event.getTitle().trim().isEmpty()) {
+    throw new RuntimeException("Invalid title");
+}
+
+Missing null check for event itself
+If event is null, calling event.getTitle() will throw a NullPointerException.
+We should validate event before accessing its fields.
+if (event == null) {
+    throw new RuntimeException("Event cannot be null");
+}
+
+Better exception type
+Using a generic RuntimeException is bad practice.
+
+Validation library
+If you use Jakarta Bean Validation (@NotBlank), you can move validation to the entity or DTO and use @Valid in the controller instead of manually checking.
